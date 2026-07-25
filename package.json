@@ -1,0 +1,16 @@
+{
+  "name": "astrokundli",
+  "version": "1.0.0",
+  "description": "AstroKundli — AI-Powered Vedic Astrology App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node --env-file=.env server.js",
+    "dev": "node --env-file=.env server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  },
+  "devDependencies": {
+    "firebase-tools": "^15.23.0"
+  }
+}
