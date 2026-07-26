@@ -21,67 +21,67 @@ app.use(express.json());
 // ===================== KUNDLI REPORT =====================
 
 app.post('/kundli-report.php', async (req, res) => {
-  const name = (req.body.full_name || '').trim();
-  const gender = (req.body.gender || '').trim();
-  const dob = (req.body.dob || '').trim();
-  const tob = (req.body.tob || '').trim();
-  const pob = (req.body.pob || '').trim();
+    const name = (req.body.full_name || '').trim();
+    const gender = (req.body.gender || '').trim();
+    const dob = (req.body.dob || '').trim();
+    const tob = (req.body.tob || '').trim();
+    const pob = (req.body.pob || '').trim();
 
-  // Validate
-  const errors = [];
-  if (!name) errors.push('Full name is required.');
-  if (!['Male', 'Female', 'Other'].includes(gender)) errors.push('Gender is required.');
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) errors.push('Valid date of birth is required.');
-  if (!/^\d{2}:\d{2}$/.test(tob)) errors.push('Valid time of birth is required.');
-  if (!pob) errors.push('Place of birth is required.');
+    // Validate
+    const errors = [];
+    if (!name) errors.push('Full name is required.');
+    if (!['Male', 'Female', 'Other'].includes(gender)) errors.push('Gender is required.');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) errors.push('Valid date of birth is required.');
+    if (!/^\d{2}:\d{2}$/.test(tob)) errors.push('Valid time of birth is required.');
+    if (!pob) errors.push('Place of birth is required.');
 
-  if (errors.length > 0) {
-    return res.status(422).json({ success: false, errors });
-  }
+    if (errors.length > 0) {
+        return res.status(422).json({ success: false, errors });
+    }
 
-  try {
-    console.log(`\n🔮 Generating Kundli for ${name} (${dob} ${tob}, ${pob})...`);
-    const kundli = await generateFullKundli(name, gender, dob, tob, pob);
-    console.log('✅ Kundli generated successfully!\n');
+    try {
+        console.log(`\n🔮 Generating Kundli for ${name} (${dob} ${tob}, ${pob})...`);
+        const kundli = await generateFullKundli(name, gender, dob, tob, pob);
+        console.log('✅ Kundli generated successfully!\n');
 
 
-    // Render the full report HTML (same structure as the old kundli-report.php)
-    const html = renderReportHTML(kundli);
-    res.send(html);
-  } catch (err) {
-    console.error('❌ Kundli generation failed:', err.message);
-    res.status(500).send(renderErrorHTML(err.message));
-  }
+        // Render the full report HTML (same structure as the old kundli-report.php)
+        const html = renderReportHTML(kundli);
+        res.send(html);
+    } catch (err) {
+        console.error('❌ Kundli generation failed:', err.message);
+        res.status(500).send(renderErrorHTML(err.message));
+    }
 });
 
 // ===================== REPORT HTML TEMPLATE =====================
 
 function escHtml(str) {
-  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function renderReportHTML(k) {
-  // Build planet rows
-  const planetRows = k.planets.map(p => {
-    const states = [];
-    if (p.exalted) states.push('<span class="badge" style="background:rgba(46, 204, 113, 0.15); color:#2ecc71; border:1px solid rgba(46, 204, 113, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Exalted (Uchcha)</span>');
-    if (p.debilitated) states.push('<span class="badge" style="background:rgba(231, 76, 60, 0.15); color:#e74c3c; border:1px solid rgba(231, 76, 60, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Neech</span>');
-    if (p.retro) states.push('<span class="badge" style="background:rgba(243, 156, 18, 0.15); color:#f39c12; border:1px solid rgba(243, 156, 18, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Vakri (R)</span>');
-    if (p.combust) states.push('<span class="badge" style="background:rgba(230, 126, 34, 0.15); color:#e67e22; border:1px solid rgba(230, 126, 34, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Ast (Combust)</span>');
-    if (p.vargottama) states.push('<span class="badge" style="background:rgba(155, 89, 182, 0.15); color:#9b59b6; border:1px solid rgba(155, 89, 182, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Vargottama</span>');
+    // Build planet rows
+    const planetRows = k.planets.map(p => {
+        const states = [];
+        if (p.exalted) states.push('<span class="badge" style="background:rgba(46, 204, 113, 0.15); color:#2ecc71; border:1px solid rgba(46, 204, 113, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Exalted (Uchcha)</span>');
+        if (p.debilitated) states.push('<span class="badge" style="background:rgba(231, 76, 60, 0.15); color:#e74c3c; border:1px solid rgba(231, 76, 60, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Neech</span>');
+        if (p.retro) states.push('<span class="badge" style="background:rgba(243, 156, 18, 0.15); color:#f39c12; border:1px solid rgba(243, 156, 18, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Vakri (R)</span>');
+        if (p.combust) states.push('<span class="badge" style="background:rgba(230, 126, 34, 0.15); color:#e67e22; border:1px solid rgba(230, 126, 34, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Ast (Combust)</span>');
+        if (p.vargottama) states.push('<span class="badge" style="background:rgba(155, 89, 182, 0.15); color:#9b59b6; border:1px solid rgba(155, 89, 182, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Vargottama</span>');
 
-    const SIGN_LORDS = {
-      'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury', 'Cancer': 'Moon',
-      'Leo': 'Sun', 'Virgo': 'Mercury', 'Libra': 'Venus', 'Scorpio': 'Mars',
-      'Sagittarius': 'Jupiter', 'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
-    };
-    if (SIGN_LORDS[p.sign] === p.planet && !p.exalted) {
-      states.push('<span class="badge" style="background:rgba(52, 152, 219, 0.15); color:#3498db; border:1px solid rgba(52, 152, 219, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Swakshetra</span>');
-    }
+        const SIGN_LORDS = {
+            'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury', 'Cancer': 'Moon',
+            'Leo': 'Sun', 'Virgo': 'Mercury', 'Libra': 'Venus', 'Scorpio': 'Mars',
+            'Sagittarius': 'Jupiter', 'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
+        };
+        if (SIGN_LORDS[p.sign] === p.planet && !p.exalted) {
+            states.push('<span class="badge" style="background:rgba(52, 152, 219, 0.15); color:#3498db; border:1px solid rgba(52, 152, 219, 0.3); padding:2px 6px; border-radius:4px; font-size:10px; font-weight:bold; margin-right:4px;">Swakshetra</span>');
+        }
 
-    if (states.length === 0) states.push('<span style="color:var(--text-muted); font-size:11px;">Normal</span>');
+        if (states.length === 0) states.push('<span style="color:var(--text-muted); font-size:11px;">Normal</span>');
 
-    return `
+        return `
         <tr>
           <td>${p.symbol} ${escHtml(p.planet)}</td>
           <td>${escHtml(p.sign)}</td>
@@ -89,46 +89,46 @@ function renderReportHTML(k) {
           <td>${p.house}</td>
           <td><div style="display:flex; flex-wrap:wrap; gap:4px;">${states.join('')}</div></td>
         </tr>`;
-  }).join('');
+    }).join('');
 
-  // 1. Generate Ashtakavarga rows
-  const signsAbbr = ['Ari', 'Tau', 'Gem', 'Can', 'Leo', 'Vir', 'Lib', 'Sco', 'Sag', 'Cap', 'Aqu', 'Pis'];
-  const signsSymbols = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
-  const planetsList = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+    // 1. Generate Ashtakavarga rows
+    const signsAbbr = ['Ari', 'Tau', 'Gem', 'Can', 'Leo', 'Vir', 'Lib', 'Sco', 'Sag', 'Cap', 'Aqu', 'Pis'];
+    const signsSymbols = ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓'];
+    const planetsList = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
 
-  let ashtakRows = '';
-  planetsList.forEach(p => {
-    const scores = (k.ashtakavarga && k.ashtakavarga.bhinnashtakavarga && k.ashtakavarga.bhinnashtakavarga[p]) || Array(12).fill(0);
-    const cols = scores.map(s => `<td class="${s >= 4 ? 'high-score' : ''}">${s}</td>`).join('');
-    ashtakRows += `<tr><td><b>${p}</b></td>${cols}</tr>`;
-  });
+    let ashtakRows = '';
+    planetsList.forEach(p => {
+        const scores = (k.ashtakavarga && k.ashtakavarga.bhinnashtakavarga && k.ashtakavarga.bhinnashtakavarga[p]) || Array(12).fill(0);
+        const cols = scores.map(s => `<td class="${s >= 4 ? 'high-score' : ''}">${s}</td>`).join('');
+        ashtakRows += `<tr><td><b>${p}</b></td>${cols}</tr>`;
+    });
 
-  const savScores = (k.ashtakavarga && k.ashtakavarga.sarvashtakavarga) || Array(12).fill(0);
-  const savCols = savScores.map(s => `<td class="${s >= 28 ? 'high-score-sav' : ''}">${s}</td>`).join('');
-  const savRow = `<tr class="sav-row"><td><b>SAV (Total)</b></td>${savCols}</tr>`;
+    const savScores = (k.ashtakavarga && k.ashtakavarga.sarvashtakavarga) || Array(12).fill(0);
+    const savCols = savScores.map(s => `<td class="${s >= 28 ? 'high-score-sav' : ''}">${s}</td>`).join('');
+    const savRow = `<tr class="sav-row"><td><b>SAV (Total)</b></td>${savCols}</tr>`;
 
-  // 2. Generate Dasha accordions HTML
-  let dashaHtml = '';
-  const now = new Date();
-  if (k.dasha && Array.isArray(k.dasha)) {
-    k.dasha.forEach((md, mdIdx) => {
-      const mdStart = new Date(md.start).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
-      const mdEnd = new Date(md.end).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
-      const isActive = now >= new Date(md.start) && now <= new Date(md.end);
+    // 2. Generate Dasha accordions HTML
+    let dashaHtml = '';
+    const now = new Date();
+    if (k.dasha && Array.isArray(k.dasha)) {
+        k.dasha.forEach((md, mdIdx) => {
+            const mdStart = new Date(md.start).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+            const mdEnd = new Date(md.end).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+            const isActive = now >= new Date(md.start) && now <= new Date(md.end);
 
-      let antardashasHtml = '';
-      (md.sub_periods || []).forEach((ad, adIdx) => {
-        const adStart = new Date(ad.start).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
-        const adEnd = new Date(ad.end).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
-        const isAdActive = now >= new Date(ad.start) && now <= new Date(ad.end);
+            let antardashasHtml = '';
+            (md.sub_periods || []).forEach((ad, adIdx) => {
+                const adStart = new Date(ad.start).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+                const adEnd = new Date(ad.end).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+                const isAdActive = now >= new Date(ad.start) && now <= new Date(ad.end);
 
-        let pratyantardashasHtml = '';
-        (ad.sub_periods || []).forEach(pad => {
-          const padStart = new Date(pad.start).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
-          const padEnd = new Date(pad.end).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
-          const isPadActive = now >= new Date(pad.start) && now <= new Date(pad.end);
+                let pratyantardashasHtml = '';
+                (ad.sub_periods || []).forEach(pad => {
+                    const padStart = new Date(pad.start).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+                    const padEnd = new Date(pad.end).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+                    const isPadActive = now >= new Date(pad.start) && now <= new Date(pad.end);
 
-          pratyantardashasHtml += `
+                    pratyantardashasHtml += `
             <div class="dasha-pad-card ${isPadActive ? 'active-dasha-pad' : ''}" data-lord="${escHtml(pad.lord)}" data-start="${pad.start}" data-end="${pad.end}" style="border-bottom:1px solid rgba(255,255,255,0.03); overflow:hidden;">
               <div class="dasha-pad-header" style="display:flex; justify-content:space-between; align-items:center; padding:8px 16px; font-size:11.5px; cursor:pointer; background:rgba(255,255,255,0.01);">
                 <div>
@@ -146,9 +146,9 @@ function renderReportHTML(k) {
               </div>
             </div>
           `;
-        });
+                });
 
-        antardashasHtml += `
+                antardashasHtml += `
           <div class="dasha-ad-card ${isAdActive ? 'active-dasha-ad' : ''}">
             <div class="dasha-ad-header">
               <div style="display:flex; align-items:center; gap:6px;">
@@ -165,9 +165,9 @@ function renderReportHTML(k) {
             </div>
           </div>
         `;
-      });
+            });
 
-      dashaHtml += `
+            dashaHtml += `
         <div class="dasha-md-card ${isActive ? 'active-dasha-md' : ''}">
           <div class="dasha-md-header">
             <div style="display:flex; align-items:center; gap:8px;">
@@ -184,30 +184,30 @@ function renderReportHTML(k) {
           </div>
         </div>
       `;
-    });
-  } else {
-    dashaHtml = '<p style="text-align:center;color:var(--text-muted);padding:24px;">Dasha calculations are currently unavailable.</p>';
-  }
-
-  // Generate Active Dasha Influence Card
-  let activeMdLord = '';
-  let activeAdLord = '';
-  const nowTime = new Date();
-  if (k.dasha && Array.isArray(k.dasha)) {
-    const activeMd = k.dasha.find(md => nowTime >= new Date(md.start) && nowTime <= new Date(md.end));
-    if (activeMd) {
-      activeMdLord = activeMd.lord;
-      const activeAd = (activeMd.sub_periods || []).find(ad => nowTime >= new Date(ad.start) && nowTime <= new Date(ad.end));
-      if (activeAd) {
-        activeAdLord = activeAd.lord;
-      }
+        });
+    } else {
+        dashaHtml = '<p style="text-align:center;color:var(--text-muted);padding:24px;">Dasha calculations are currently unavailable.</p>';
     }
-  }
 
-  const mdDesc = (k.dashaInterpretations && k.dashaInterpretations[activeMdLord]) || 'Influences this major period of your life.';
-  const adDesc = (k.dashaInterpretations && k.dashaInterpretations[activeAdLord]) || 'Shapes the sub-period events and opportunities.';
+    // Generate Active Dasha Influence Card
+    let activeMdLord = '';
+    let activeAdLord = '';
+    const nowTime = new Date();
+    if (k.dasha && Array.isArray(k.dasha)) {
+        const activeMd = k.dasha.find(md => nowTime >= new Date(md.start) && nowTime <= new Date(md.end));
+        if (activeMd) {
+            activeMdLord = activeMd.lord;
+            const activeAd = (activeMd.sub_periods || []).find(ad => nowTime >= new Date(ad.start) && nowTime <= new Date(ad.end));
+            if (activeAd) {
+                activeAdLord = activeAd.lord;
+            }
+        }
+    }
 
-  const activeDashaCardHtml = activeMdLord ? `
+    const mdDesc = (k.dashaInterpretations && k.dashaInterpretations[activeMdLord]) || 'Influences this major period of your life.';
+    const adDesc = (k.dashaInterpretations && k.dashaInterpretations[activeAdLord]) || 'Shapes the sub-period events and opportunities.';
+
+    const activeDashaCardHtml = activeMdLord ? `
     <div class="active-dasha-guidance" style="background:rgba(212,175,55,0.06); border:1px solid rgba(212,175,55,0.2); border-radius:var(--radius-md); padding:16px; margin-bottom:16px;">
       <h4 style="color:var(--gold-light); font-size:13.5px; font-weight:600; margin-bottom:10px; display:flex; align-items:center; gap:6px;">🔮 Current Active Dasha Influence</h4>
       <div style="font-size:12px; line-height:1.55; display:flex; flex-direction:column; gap:8px;">
@@ -224,24 +224,24 @@ function renderReportHTML(k) {
     </div>
   ` : '';
 
-  // Generate Rajyoga cards HTML
-  let rajyogHtml = '';
-  if (k.yogas && Array.isArray(k.yogas)) {
-    rajyogHtml = k.yogas.map(y => `
+    // Generate Rajyoga cards HTML
+    let rajyogHtml = '';
+    if (k.yogas && Array.isArray(k.yogas)) {
+        rajyogHtml = k.yogas.map(y => `
       <div class="yoga-card" style="background:rgba(255,255,255,0.03); border:1px solid var(--card-border); border-radius:var(--radius-md); padding:14px 16px; border-left:4px solid var(--gold); margin-bottom:10px;">
         <h4 style="font-size:13.5px; color:var(--gold-light); margin-bottom:6px; font-weight:700; display:flex; align-items:center; gap:6px;">🌟 ${escHtml(y.name)}</h4>
         <p style="font-size:12px; color:var(--text-muted); line-height:1.55;">${escHtml(y.description)}</p>
       </div>
     `).join('');
-  }
-  if (!rajyogHtml) {
-    rajyogHtml = '<p style="text-align:center;color:var(--text-muted);padding:24px;">No major Rajyogas detected in the birth chart.</p>';
-  }
+    }
+    if (!rajyogHtml) {
+        rajyogHtml = '<p style="text-align:center;color:var(--text-muted);padding:24px;">No major Rajyogas detected in the birth chart.</p>';
+    }
 
-  // Generate Planets Details Placement cards HTML
-  let planetsInfoHtml = '';
-  if (k.planetaryDetails && Array.isArray(k.planetaryDetails)) {
-    planetsInfoHtml = k.planetaryDetails.map(pd => `
+    // Generate Planets Details Placement cards HTML
+    let planetsInfoHtml = '';
+    if (k.planetaryDetails && Array.isArray(k.planetaryDetails)) {
+        planetsInfoHtml = k.planetaryDetails.map(pd => `
       <div class="planet-info-card" style="background:rgba(255,255,255,0.03); border:1px solid var(--card-border); border-radius:var(--radius-md); padding:14px 16px; margin-bottom:10px;">
         <h4 style="font-size:13.5px; color:var(--gold-light); margin-bottom:6px; font-weight:700; display:flex; align-items:center; gap:6px;">
           <span>${pd.symbol}</span> <span>${escHtml(pd.planet)} Placement</span>
@@ -249,27 +249,27 @@ function renderReportHTML(k) {
         <p style="font-size:12px; color:var(--text-muted); line-height:1.55;">${escHtml(pd.explanation)}</p>
       </div>
     `).join('');
-  } else {
-    planetsInfoHtml = '<p style="text-align:center;color:var(--text-muted);padding:24px;">Planetary placement details are currently unavailable.</p>';
-  }
+    } else {
+        planetsInfoHtml = '<p style="text-align:center;color:var(--text-muted);padding:24px;">Planetary placement details are currently unavailable.</p>';
+    }
 
-  // Generate Doshas cards HTML
-  let doshasListHtml = '';
-  if (k.doshas && Array.isArray(k.doshas)) {
-    doshasListHtml = k.doshas.map(d => {
-      let badgeColor = 'rgba(231, 76, 60, 0.15)';
-      let textColor = '#e74c3c';
-      let border = '1px solid rgba(231, 76, 60, 0.3)';
-      if (d.type === 'Mild' || d.type === 'Insignificant') {
-        badgeColor = 'rgba(46, 204, 113, 0.15)';
-        textColor = '#2ecc71';
-        border = '1px solid rgba(46, 204, 113, 0.3)';
-      } else if (d.type === 'Moderate') {
-        badgeColor = 'rgba(243, 156, 18, 0.15)';
-        textColor = '#f39c12';
-        border = '1px solid rgba(243, 156, 18, 0.3)';
-      }
-      return `
+    // Generate Doshas cards HTML
+    let doshasListHtml = '';
+    if (k.doshas && Array.isArray(k.doshas)) {
+        doshasListHtml = k.doshas.map(d => {
+            let badgeColor = 'rgba(231, 76, 60, 0.15)';
+            let textColor = '#e74c3c';
+            let border = '1px solid rgba(231, 76, 60, 0.3)';
+            if (d.type === 'Mild' || d.type === 'Insignificant') {
+                badgeColor = 'rgba(46, 204, 113, 0.15)';
+                textColor = '#2ecc71';
+                border = '1px solid rgba(46, 204, 113, 0.3)';
+            } else if (d.type === 'Moderate') {
+                badgeColor = 'rgba(243, 156, 18, 0.15)';
+                textColor = '#f39c12';
+                border = '1px solid rgba(243, 156, 18, 0.3)';
+            }
+            return `
         <div class="dosha-card" style="background:rgba(255,255,255,0.03); border:1px solid var(--card-border); border-radius:var(--radius-md); padding:14px 16px; margin-bottom:10px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
             <h4 style="font-size:13.5px; color:var(--gold-light); font-weight:700; margin:0;">⚠️ ${escHtml(d.name)}</h4>
@@ -278,43 +278,43 @@ function renderReportHTML(k) {
           <p style="font-size:12px; color:var(--text-muted); line-height:1.55; margin:0;">${escHtml(d.description)}</p>
         </div>
       `;
-    }).join('');
-  } else {
-    doshasListHtml = '<p style="text-align:center;color:var(--text-muted);padding:24px;">Doshas calculations are currently unavailable.</p>';
-  }
+        }).join('');
+    } else {
+        doshasListHtml = '<p style="text-align:center;color:var(--text-muted);padding:24px;">Doshas calculations are currently unavailable.</p>';
+    }
 
-  // Classify functional benefics/malefics
-  const FUNCTIONAL_PLANETS = {
-    'Aries': { benefics: ['Sun', 'Moon', 'Mars', 'Jupiter'], malefics: ['Mercury', 'Venus', 'Saturn'] },
-    'Taurus': { benefics: ['Saturn', 'Venus', 'Mercury', 'Sun'], malefics: ['Jupiter', 'Moon', 'Mars'] },
-    'Gemini': { benefics: ['Venus', 'Mercury'], malefics: ['Mars', 'Sun', 'Jupiter', 'Saturn', 'Moon'] },
-    'Cancer': { benefics: ['Mars', 'Jupiter', 'Moon'], malefics: ['Mercury', 'Venus', 'Saturn', 'Sun'] },
-    'Leo': { benefics: ['Mars', 'Sun', 'Jupiter'], malefics: ['Mercury', 'Venus', 'Saturn', 'Moon'] },
-    'Virgo': { benefics: ['Venus', 'Mercury'], malefics: ['Mars', 'Jupiter', 'Moon', 'Sun'] },
-    'Libra': { benefics: ['Saturn', 'Venus', 'Mercury'], malefics: ['Jupiter', 'Sun', 'Mars', 'Moon'] },
-    'Scorpio': { benefics: ['Jupiter', 'Moon', 'Sun', 'Mars'], malefics: ['Mercury', 'Venus', 'Saturn'] },
-    'Sagittarius': { benefics: ['Sun', 'Mars', 'Jupiter'], malefics: ['Mercury', 'Venus', 'Saturn', 'Moon'] },
-    'Capricorn': { benefics: ['Venus', 'Mercury', 'Saturn'], malefics: ['Mars', 'Jupiter', 'Moon', 'Sun'] },
-    'Aquarius': { benefics: ['Venus', 'Sun', 'Mars', 'Saturn'], malefics: ['Jupiter', 'Moon', 'Mercury'] },
-    'Pisces': { benefics: ['Moon', 'Mars', 'Jupiter'], malefics: ['Sun', 'Mercury', 'Venus', 'Saturn'] }
-  };
+    // Classify functional benefics/malefics
+    const FUNCTIONAL_PLANETS = {
+        'Aries': { benefics: ['Sun', 'Moon', 'Mars', 'Jupiter'], malefics: ['Mercury', 'Venus', 'Saturn'] },
+        'Taurus': { benefics: ['Saturn', 'Venus', 'Mercury', 'Sun'], malefics: ['Jupiter', 'Moon', 'Mars'] },
+        'Gemini': { benefics: ['Venus', 'Mercury'], malefics: ['Mars', 'Sun', 'Jupiter', 'Saturn', 'Moon'] },
+        'Cancer': { benefics: ['Mars', 'Jupiter', 'Moon'], malefics: ['Mercury', 'Venus', 'Saturn', 'Sun'] },
+        'Leo': { benefics: ['Mars', 'Sun', 'Jupiter'], malefics: ['Mercury', 'Venus', 'Saturn', 'Moon'] },
+        'Virgo': { benefics: ['Venus', 'Mercury'], malefics: ['Mars', 'Jupiter', 'Moon', 'Sun'] },
+        'Libra': { benefics: ['Saturn', 'Venus', 'Mercury'], malefics: ['Jupiter', 'Sun', 'Mars', 'Moon'] },
+        'Scorpio': { benefics: ['Jupiter', 'Moon', 'Sun', 'Mars'], malefics: ['Mercury', 'Venus', 'Saturn'] },
+        'Sagittarius': { benefics: ['Sun', 'Mars', 'Jupiter'], malefics: ['Mercury', 'Venus', 'Saturn', 'Moon'] },
+        'Capricorn': { benefics: ['Venus', 'Mercury', 'Saturn'], malefics: ['Mars', 'Jupiter', 'Moon', 'Sun'] },
+        'Aquarius': { benefics: ['Venus', 'Sun', 'Mars', 'Saturn'], malefics: ['Jupiter', 'Moon', 'Mercury'] },
+        'Pisces': { benefics: ['Moon', 'Mars', 'Jupiter'], malefics: ['Sun', 'Mercury', 'Venus', 'Saturn'] }
+    };
 
-  const ascSign = k.meta.ascendant.sign;
-  const fp = FUNCTIONAL_PLANETS[ascSign] || { benefics: [], malefics: [] };
+    const ascSign = k.meta.ascendant.sign;
+    const fp = FUNCTIONAL_PLANETS[ascSign] || { benefics: [], malefics: [] };
 
-  const beneficList = fp.benefics.map(p => `<span style="display:inline-block; background:rgba(63,203,140,0.15); padding:2px 8px; border-radius:4px; margin:2px;">${p}</span>`).join('');
-  const maleficList = fp.malefics.map(p => `<span style="display:inline-block; background:rgba(225,85,107,0.15); padding:2px 8px; border-radius:4px; margin:2px;">${p}</span>`).join('');
+    const beneficList = fp.benefics.map(p => `<span style="display:inline-block; background:rgba(63,203,140,0.15); padding:2px 8px; border-radius:4px; margin:2px;">${p}</span>`).join('');
+    const maleficList = fp.malefics.map(p => `<span style="display:inline-block; background:rgba(225,85,107,0.15); padding:2px 8px; border-radius:4px; margin:2px;">${p}</span>`).join('');
 
-  // Build 12-Month Monthly Predictions HTML
-  let monthlyPredsHtml = '';
-  if (k.monthlyPredictions && Array.isArray(k.monthlyPredictions)) {
-    const monthTabsBtnHtml = k.monthlyPredictions.map((m, idx) => `
+    // Build 12-Month Monthly Predictions HTML
+    let monthlyPredsHtml = '';
+    if (k.monthlyPredictions && Array.isArray(k.monthlyPredictions)) {
+        const monthTabsBtnHtml = k.monthlyPredictions.map((m, idx) => `
       <button class="month-tab-btn ${idx === 0 ? 'active' : ''}" onclick="switchMonthTab(${idx})">
         ${escHtml(m.shortMonth)} ${m.year}
       </button>
     `).join('');
 
-    const monthCardsHtml = k.monthlyPredictions.map((m, idx) => `
+        const monthCardsHtml = k.monthlyPredictions.map((m, idx) => `
       <div class="month-pred-card ${idx === 0 ? 'active' : ''}" id="month-card-${idx}">
         <div class="month-card-header">
           <div class="month-title-wrap">
@@ -358,7 +358,7 @@ function renderReportHTML(k) {
       </div>
     `).join('');
 
-    monthlyPredsHtml = `
+        monthlyPredsHtml = `
       <div class="monthly-predictions-wrapper">
         <div class="monthly-intro-box">
           <h3>📅 1-Year Detailed Monthly Forecast (12 Months)</h3>
@@ -376,9 +376,9 @@ function renderReportHTML(k) {
         </div>
       </div>
     `;
-  }
+    }
 
-  return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -473,7 +473,6 @@ if (savedTheme === 'light') {
       <div class="info-tile"><div class="k">Yog</div><div class="v">${escHtml(k.panchang.yog)}</div></div>
       <div class="info-tile"><div class="k">Karan</div><div class="v">${escHtml(k.panchang.karan)}</div></div>
       <div class="info-tile"><div class="k">Paksha</div><div class="v">${escHtml(k.panchang.paksha)}</div></div>
-      <div class="info-tile"><div class="k">Varna</div><div class="v">${escHtml(k.panchang.varna || 'N/A')}</div></div>
       <div class="info-tile"><div class="k">Sunrise</div><div class="v">${escHtml(k.panchang.sunrise)}</div></div>
       <div class="info-tile"><div class="k">Sunset</div><div class="v">${escHtml(k.panchang.sunset)}</div></div>
       <div class="info-tile" style="grid-column:1/-1;"><div class="k">Vikram Samvat</div><div class="v">${escHtml(k.panchang.vikram_samvat)}</div></div>
@@ -634,7 +633,7 @@ function switchMonthTab(idx) {
 }
 
 function renderErrorHTML(message) {
-  return `<!DOCTYPE html>
+    return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -659,155 +658,155 @@ function renderErrorHTML(message) {
 // ===================== AI CHAT API =====================
 
 app.post('/api/chat', async (req, res) => {
-  const userMessage = req.body.message;
-  const history = req.body.history || [];
-  const kundliContext = req.body.kundliContext || null;
+    const userMessage = req.body.message;
+    const history = req.body.history || [];
+    const kundliContext = req.body.kundliContext || null;
 
-  if (!userMessage) {
-    return res.status(400).json({ success: false, message: 'Message is required.' });
-  }
-
-  // Build System Instructions with Kundli Context if present
-  let systemInstruction = "You are 'AstroGuru', an expert, wise, and warm Vedic Astrologer. " +
-    "Help the user understand their destiny, career, love, health, and chart details. " +
-    "Be encouraging and warm, but astrologically sound. " +
-    "Keep your answers relatively brief (3-4 sentences max per response) unless explaining something complex.";
-
-  if (kundliContext) {
-    systemInstruction += `\n\nActive User Kundli Context:\n` +
-      `- Name: ${kundliContext.name}\n` +
-      `- Gender: ${kundliContext.gender}\n` +
-      `- Birth details: ${kundliContext.dob} ${kundliContext.tob} at ${kundliContext.pob}\n` +
-      `- Moon Sign: ${kundliContext.moonSign}\n` +
-      `- Ascendant: ${kundliContext.ascendant}\n` +
-      `- Planets positions:\n${JSON.stringify(kundliContext.planets, null, 2)}`;
-  }
-
-  const apiKey = config.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-    return res.json({
-      success: true,
-      reply: "My apologies! My Gemini API Key is not configured in config.js, so I can't read your cosmic path right now. Please tell the administrator to set it!"
-    });
-  }
-
-  try {
-    const contents = [...history];
-    contents.push({
-      role: 'user',
-      parts: [{ text: userMessage }]
-    });
-
-    const requestBody = {
-      contents: contents,
-      systemInstruction: {
-        parts: [{ text: systemInstruction }]
-      }
-    };
-
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      console.error("Gemini API error status:", response.status, errText);
-      return res.json({
-        success: true,
-        reply: "I am having trouble connecting to the cosmic stars right now. Please try again in a moment!"
-      });
+    if (!userMessage) {
+        return res.status(400).json({ success: false, message: 'Message is required.' });
     }
 
-    const data = await response.json();
+    // Build System Instructions with Kundli Context if present
+    let systemInstruction = "You are 'AstroGuru', an expert, wise, and warm Vedic Astrologer. " +
+        "Help the user understand their destiny, career, love, health, and chart details. " +
+        "Be encouraging and warm, but astrologically sound. " +
+        "Keep your answers relatively brief (3-4 sentences max per response) unless explaining something complex.";
 
-    if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content?.parts?.[0]?.text) {
-      let replyMessage = "I am listening, but the stars are silent. Ask me another question.";
-      if (data.promptFeedback?.blockReason) {
-        replyMessage = `AstroGuru could not answer this because the query was blocked by Gemini safety filters (${data.promptFeedback.blockReason}). If using Hindi/Hinglish, please check your spelling (e.g. use 'chhodna' instead of 'chodna') or try asking in English. Your coin has been refunded!`;
-      } else {
-        replyMessage = "The stars are silent right now. Your coin has been refunded. Please try asking again or rephrasing your question!";
-      }
-
-      return res.json({
-        success: true,
-        reply: replyMessage
-      });
+    if (kundliContext) {
+        systemInstruction += `\n\nActive User Kundli Context:\n` +
+            `- Name: ${kundliContext.name}\n` +
+            `- Gender: ${kundliContext.gender}\n` +
+            `- Birth details: ${kundliContext.dob} ${kundliContext.tob} at ${kundliContext.pob}\n` +
+            `- Moon Sign: ${kundliContext.moonSign}\n` +
+            `- Ascendant: ${kundliContext.ascendant}\n` +
+            `- Planets positions:\n${JSON.stringify(kundliContext.planets, null, 2)}`;
     }
 
-    const reply = data.candidates[0].content.parts[0].text;
+    const apiKey = config.GEMINI_API_KEY;
+    if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+        return res.json({
+            success: true,
+            reply: "My apologies! My Gemini API Key is not configured in config.js, so I can't read your cosmic path right now. Please tell the administrator to set it!"
+        });
+    }
 
-    return res.json({
-      success: true,
-      reply: reply.trim()
-    });
-  } catch (error) {
-    console.error("Error calling Gemini API:", error);
-    return res.json({
-      success: true,
-      reply: "The stellar channels are offline. Let's try again in a moment!"
-    });
-  }
+    try {
+        const contents = [...history];
+        contents.push({
+            role: 'user',
+            parts: [{ text: userMessage }]
+        });
+
+        const requestBody = {
+            contents: contents,
+            systemInstruction: {
+                parts: [{ text: systemInstruction }]
+            }
+        };
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            const errText = await response.text();
+            console.error("Gemini API error status:", response.status, errText);
+            return res.json({
+                success: true,
+                reply: "I am having trouble connecting to the cosmic stars right now. Please try again in a moment!"
+            });
+        }
+
+        const data = await response.json();
+
+        if (!data.candidates || data.candidates.length === 0 || !data.candidates[0].content?.parts?.[0]?.text) {
+            let replyMessage = "I am listening, but the stars are silent. Ask me another question.";
+            if (data.promptFeedback?.blockReason) {
+                replyMessage = `AstroGuru could not answer this because the query was blocked by Gemini safety filters (${data.promptFeedback.blockReason}). If using Hindi/Hinglish, please check your spelling (e.g. use 'chhodna' instead of 'chodna') or try asking in English. Your coin has been refunded!`;
+            } else {
+                replyMessage = "The stars are silent right now. Your coin has been refunded. Please try asking again or rephrasing your question!";
+            }
+
+            return res.json({
+                success: true,
+                reply: replyMessage
+            });
+        }
+
+        const reply = data.candidates[0].content.parts[0].text;
+
+        return res.json({
+            success: true,
+            reply: reply.trim()
+        });
+    } catch (error) {
+        console.error("Error calling Gemini API:", error);
+        return res.json({
+            success: true,
+            reply: "The stellar channels are offline. Let's try again in a moment!"
+        });
+    }
 });
 
 // ===================== CITY SEARCH (autocomplete proxy) =====================
 
 app.get('/api/city-search', async (req, res) => {
-  const q = (req.query.q || '').trim();
-  if (q.length < 2) return res.json({ results: [] });
+    const q = (req.query.q || '').trim();
+    if (q.length < 2) return res.json({ results: [] });
 
-  const apiKey = config.FREE_ASTRO_API_KEY;
-  if (!apiKey || apiKey === 'YOUR_FREE_ASTRO_API_KEY_HERE') {
-    // Fallback mock results when API key is not set
-    return res.json({
-      results: [
-        { name: q, country: 'India' },
-        { name: q + ' City', country: 'India' },
-      ]
-    });
-  }
+    const apiKey = config.FREE_ASTRO_API_KEY;
+    if (!apiKey || apiKey === 'YOUR_FREE_ASTRO_API_KEY_HERE') {
+        // Fallback mock results when API key is not set
+        return res.json({
+            results: [
+                { name: q, country: 'India' },
+                { name: q + ' City', country: 'India' },
+            ]
+        });
+    }
 
-  try {
-    const url = `${config.FREE_ASTRO_API_BASE}/api/v2/geo/search?q=${encodeURIComponent(q)}&limit=6`;
-    const response = await fetch(url, { headers: { 'x-api-key': apiKey } });
-    if (!response.ok) throw new Error(`Geo search failed: ${response.status}`);
-    const data = await response.json();
-    res.json({ results: data.results || [] });
-  } catch (err) {
-    console.error('City search error:', err.message);
-    res.json({ results: [] });
-  }
+    try {
+        const url = `${config.FREE_ASTRO_API_BASE}/api/v2/geo/search?q=${encodeURIComponent(q)}&limit=6`;
+        const response = await fetch(url, { headers: { 'x-api-key': apiKey } });
+        if (!response.ok) throw new Error(`Geo search failed: ${response.status}`);
+        const data = await response.json();
+        res.json({ results: data.results || [] });
+    } catch (err) {
+        console.error('City search error:', err.message);
+        res.json({ results: [] });
+    }
 });
 
 // ===================== DAILY HOROSCOPE =====================
 
 app.post('/api/daily-horoscope', async (req, res) => {
-  const { sign, date, mode } = req.body || {};
-  const apiKey = config.GEMINI_API_KEY;
+    const { sign, date, mode } = req.body || {};
+    const apiKey = config.GEMINI_API_KEY;
 
-  if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-    if (mode === 'cosmic_insight') {
-      return res.json({ insight: '✦ Venus and Jupiter align beautifully today — embrace creativity, nurture your relationships, and trust the cosmic flow. Lucky color: <strong>Gold</strong>.' });
+    if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+        if (mode === 'cosmic_insight') {
+            return res.json({ insight: '✦ Venus and Jupiter align beautifully today — embrace creativity, nurture your relationships, and trust the cosmic flow. Lucky color: <strong>Gold</strong>.' });
+        }
+        return res.json({
+            horoscope: {
+                overall: `The stars shine favorably for ${sign || 'you'} today. Channel your natural strengths and embrace new opportunities with confidence.`,
+                career: 'A productive day for work — focus on priorities and collaboration.',
+                love: 'Warm connections await. Be open and expressive with those you care about.',
+                health: 'Stay hydrated and take short breaks. A gentle walk will boost your energy.',
+                lucky_color: 'Gold',
+                lucky_number: 7,
+            }
+        });
     }
-    return res.json({
-      horoscope: {
-        overall: `The stars shine favorably for ${sign || 'you'} today. Channel your natural strengths and embrace new opportunities with confidence.`,
-        career: 'A productive day for work — focus on priorities and collaboration.',
-        love: 'Warm connections await. Be open and expressive with those you care about.',
-        health: 'Stay hydrated and take short breaks. A gentle walk will boost your energy.',
-        lucky_color: 'Gold',
-        lucky_number: 7,
-      }
-    });
-  }
 
-  try {
-    let prompt;
-    if (mode === 'cosmic_insight') {
-      prompt = `Write a single inspiring cosmic insight for today (${date || new Date().toDateString()}). Mention one planet and one theme. End with a lucky color in this exact format: "Lucky color: Gold". 2 sentences max. Use <strong> tags for the planet name and lucky color only. Plain text otherwise.`;
-    } else {
-      prompt = `Generate a Vedic-inspired daily horoscope for ${sign} on ${date || new Date().toDateString()}.
+    try {
+        let prompt;
+        if (mode === 'cosmic_insight') {
+            prompt = `Write a single inspiring cosmic insight for today (${date || new Date().toDateString()}). Mention one planet and one theme. End with a lucky color in this exact format: "Lucky color: Gold". 2 sentences max. Use <strong> tags for the planet name and lucky color only. Plain text otherwise.`;
+        } else {
+            prompt = `Generate a Vedic-inspired daily horoscope for ${sign} on ${date || new Date().toDateString()}.
 Return ONLY a raw JSON object (no markdown, no code fences) with exactly these keys:
 {
   "overall": "2-3 sentences about the overall day",
@@ -817,57 +816,57 @@ Return ONLY a raw JSON object (no markdown, no code fences) with exactly these k
   "lucky_color": "one color name",
   "lucky_number": 7
 }`;
+        }
+
+        const geminiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
+            {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
+            }
+        );
+        const data = await geminiRes.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+
+        if (mode === 'cosmic_insight') return res.json({ insight: text });
+
+        // Parse JSON for per-sign horoscope
+        try {
+            const clean = text.replace(/^```(?:json)?\n?|\n?```$/g, '').trim();
+            return res.json({ horoscope: JSON.parse(clean) });
+        } catch (_) {
+            return res.json({ horoscope: { overall: text, lucky_color: 'Gold', lucky_number: 7 } });
+        }
+    } catch (err) {
+        console.error('Daily horoscope error:', err.message);
+        res.json({ horoscope: { overall: `${sign || 'Your'} energy is bright today. Stay focused and trust your instincts.`, lucky_color: 'Gold', lucky_number: 1 } });
     }
-
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-      {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
-      }
-    );
-    const data = await geminiRes.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
-
-    if (mode === 'cosmic_insight') return res.json({ insight: text });
-
-    // Parse JSON for per-sign horoscope
-    try {
-      const clean = text.replace(/^```(?:json)?\n?|\n?```$/g, '').trim();
-      return res.json({ horoscope: JSON.parse(clean) });
-    } catch (_) {
-      return res.json({ horoscope: { overall: text, lucky_color: 'Gold', lucky_number: 7 } });
-    }
-  } catch (err) {
-    console.error('Daily horoscope error:', err.message);
-    res.json({ horoscope: { overall: `${sign || 'Your'} energy is bright today. Stay focused and trust your instincts.`, lucky_color: 'Gold', lucky_number: 1 } });
-  }
 });
 
 // ===================== KUNDLI COMPATIBILITY =====================
 
 app.post('/api/compatibility', async (req, res) => {
-  const { name1, dob1, pob1, name2, dob2, pob2 } = req.body || {};
-  if (!name1 || !dob1 || !name2 || !dob2) {
-    return res.status(400).json({ success: false, message: 'Missing required fields' });
-  }
+    const { name1, dob1, pob1, name2, dob2, pob2 } = req.body || {};
+    if (!name1 || !dob1 || !name2 || !dob2) {
+        return res.status(400).json({ success: false, message: 'Missing required fields' });
+    }
 
-  const apiKey = config.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
-    return res.json({
-      result: {
-        score: 78,
-        rating: '⭐ Great Match',
-        overall: `${name1} and ${name2} share a wonderful cosmic connection. Their birth charts indicate strong compatibility in values and communication.`,
-        strengths: 'Strong emotional understanding and complementary energies create a natural harmony.',
-        challenges: 'Small differences in approach may require patience and open dialogue.',
-        advice: 'Celebrate your differences — they make your bond uniquely powerful.',
-      }
-    });
-  }
+    const apiKey = config.GEMINI_API_KEY;
+    if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+        return res.json({
+            result: {
+                score: 78,
+                rating: '⭐ Great Match',
+                overall: `${name1} and ${name2} share a wonderful cosmic connection. Their birth charts indicate strong compatibility in values and communication.`,
+                strengths: 'Strong emotional understanding and complementary energies create a natural harmony.',
+                challenges: 'Small differences in approach may require patience and open dialogue.',
+                advice: 'Celebrate your differences — they make your bond uniquely powerful.',
+            }
+        });
+    }
 
-  try {
-    const prompt = `Perform a Vedic astrology compatibility analysis for:
+    try {
+        const prompt = `Perform a Vedic astrology compatibility analysis for:
 Person 1: ${name1}, born ${dob1}${pob1 ? ` in ${pob1}` : ''}
 Person 2: ${name2}, born ${dob2}${pob2 ? ` in ${pob2}` : ''}
 
@@ -882,50 +881,50 @@ Return ONLY a raw JSON object (no markdown, no code fences) with exactly these k
 }
 Score range: 40-95. Rating options: "✨ Excellent Match", "⭐ Great Match", "💫 Good Match", "🌙 Moderate Match".`;
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-      {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
-      }
-    );
-    const data = await geminiRes.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
+        const geminiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
+            {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
+            }
+        );
+        const data = await geminiRes.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
-    try {
-      const clean = text.replace(/^```(?:json)?\n?|\n?```$/g, '').trim();
-      return res.json({ result: JSON.parse(clean) });
-    } catch (_) {
-      return res.json({
-        result: {
-          score: 72, rating: '💫 Good Match',
-          overall: text || `${name1} and ${name2} have complementary cosmic energies.`,
-          strengths: 'Shared values and mutual respect form a solid foundation.',
-          challenges: 'Patience and communication will smooth any rough edges.',
-          advice: 'Trust your cosmic connection — it grows stronger with time.',
+        try {
+            const clean = text.replace(/^```(?:json)?\n?|\n?```$/g, '').trim();
+            return res.json({ result: JSON.parse(clean) });
+        } catch (_) {
+            return res.json({
+                result: {
+                    score: 72, rating: '💫 Good Match',
+                    overall: text || `${name1} and ${name2} have complementary cosmic energies.`,
+                    strengths: 'Shared values and mutual respect form a solid foundation.',
+                    challenges: 'Patience and communication will smooth any rough edges.',
+                    advice: 'Trust your cosmic connection — it grows stronger with time.',
+                }
+            });
         }
-      });
+    } catch (err) {
+        console.error('Compatibility error:', err.message);
+        res.status(500).json({ success: false, message: 'Compatibility check failed' });
     }
-  } catch (err) {
-    console.error('Compatibility error:', err.message);
-    res.status(500).json({ success: false, message: 'Compatibility check failed' });
-  }
 });
 
 // ===================== STATIC FILES (after API routes) =====================
 app.use(express.static(path.join(__dirname), {
-  index: 'index.html',
-  extensions: ['html']
+    index: 'index.html',
+    extensions: ['html']
 }));
 
 // ===================== START SERVER =====================
 
 if (!process.env.VERCEL) {
-  app.listen(config.PORT, () => {
-    console.log(`\n🕉  AstroKundli server running at http://localhost:${config.PORT}`);
-    console.log(`   DivineAPI: ${config.DIVINE_API_KEY ? '✅ Key configured' : '❌ NOT SET (update config.js!)'}`);
-    console.log(`   FreeAstroAPI (Geo): ${config.FREE_ASTRO_API_KEY ? '✅ Key configured' : '❌ NOT SET (update config.js!)'}\n`);
-  });
+    app.listen(config.PORT, () => {
+        console.log(`\n🕉  AstroKundli server running at http://localhost:${config.PORT}`);
+        console.log(`   DivineAPI: ${config.DIVINE_API_KEY ? '✅ Key configured' : '❌ NOT SET (update config.js!)'}`);
+        console.log(`   FreeAstroAPI (Geo): ${config.FREE_ASTRO_API_KEY ? '✅ Key configured' : '❌ NOT SET (update config.js!)'}\n`);
+    });
 }
 
 module.exports = app;

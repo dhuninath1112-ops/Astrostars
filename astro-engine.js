@@ -228,6 +228,32 @@ async function fetchVedicChart(name, gender, dob, tob, geo) {
   };
 }
 
+/** Helper to find active Panchang element by birth time range */
+function findActivePanchangElement(list, birthTimeStr, nameKey) {
+  if (!list || !Array.isArray(list) || list.length === 0) return '';
+  const birthTime = new Date(birthTimeStr.replace(' ', 'T'));
+  
+  for (const item of list) {
+    const start = item.start_time ? new Date(item.start_time.replace(' ', 'T')) : null;
+    const end = item.end_time ? new Date(item.end_time.replace(' ', 'T')) : null;
+    
+    if (start && end) {
+      if (birthTime >= start && birthTime <= end) {
+        return item[nameKey] || '';
+      }
+    } else if (start && !end) {
+      if (birthTime >= start) {
+        return item[nameKey] || '';
+      }
+    } else if (!start && end) {
+      if (birthTime <= end) {
+        return item[nameKey] || '';
+      }
+    }
+  }
+  return list[0]?.[nameKey] || '';
+}
+
 /** Fetch Panchang data via DivineAPI */
 async function fetchPanchang(name, gender, dob, tob, geo) {
   const body = buildDivineBody(name, gender, dob, tob, geo);
@@ -246,29 +272,62 @@ async function fetchPanchang(name, gender, dob, tob, geo) {
     throw new Error(`Panchang API error: ${res.status}`);
   }
   const raw = await res.json();
+  console.log('DivineAPI /find-panchang raw response:', JSON.stringify(raw));
   if (raw.success !== 1 && raw.success !== "1") {
     throw new Error(`DivineAPI error: ${raw.message || 'Unknown error'}`);
   }
 
   const data = raw.data || {};
   const day = new Date(`${dob}T${tob}:00`).toLocaleDateString('en-US', { weekday: 'long' });
+  const birthTimeStr = `${dob} ${tob}:00`;
   
-  let paksha = 'Shukla';
-  const tithiStr = (data.tithi || '').toLowerCase();
-  if (tithiStr.includes('krishna') || tithiStr.includes('dark')) {
-    paksha = 'Krishna';
+  // Extract active Tithi & Paksha
+  const activeTithi = findActivePanchangElement(data.tithis, birthTimeStr, 'tithi');
+  const activePaksha = findActivePanchangElement(data.tithis, birthTimeStr, 'paksha') || 'Shukla';
+
+  // Extract active Nakshatra
+  let nakshatraName = '';
+  if (data.nakshatras?.nakshatra_pada && Array.isArray(data.nakshatras.nakshatra_pada)) {
+    const birthTime = new Date(`${dob}T${tob}:00`);
+    for (const item of data.nakshatras.nakshatra_pada) {
+      if (item.end_time) {
+        const end = new Date(item.end_time.replace(' ', 'T'));
+        if (birthTime <= end) {
+          nakshatraName = `${item.nak_name || ''}${item.nak_pada ? ` Pada ${item.nak_pada}` : ''}`;
+          break;
+        }
+      }
+    }
   }
+  if (!nakshatraName && data.nakshatras?.nakshatra_list && data.nakshatras.nakshatra_list.length > 0) {
+    nakshatraName = data.nakshatras.nakshatra_list[0].nak_name || '';
+  }
+
+  // Extract active Yoga & Karana
+  const activeYoga = findActivePanchangElement(data.yogas, birthTimeStr, 'yoga_name');
+  const activeKarana = findActivePanchangElement(data.karnas, birthTimeStr, 'karana_name');
+
+  // Extract Vikram Samvat
+  const getVikramSamvat = (dateStr) => {
+    try {
+      const year = new Date(dateStr).getFullYear();
+      return String(year + 57);
+    } catch(e) {
+      return '2083';
+    }
+  };
+  const vikramSamvat = data.vikram_samvat || getVikramSamvat(dob);
 
   return {
     day: data.day || day,
-    tithi: data.tithi || '',
-    nakshatra: data.nakshatra || '',
-    yog: data.yoga || '',
-    karan: data.karana || '',
-    paksha: paksha,
+    tithi: activeTithi || data.tithi || 'N/A',
+    nakshatra: nakshatraName || data.nakshatra || 'N/A',
+    yog: activeYoga || data.yoga || 'N/A',
+    karan: activeKarana || data.karana || 'N/A',
+    paksha: activePaksha || 'Shukla',
     sunrise: data.sunrise || '06:00 AM',
     sunset: data.sunset || '06:00 PM',
-    vikram_samvat: data.vikram_samvat || '2083'
+    vikram_samvat: vikramSamvat
   };
 }
 
@@ -954,6 +1013,145 @@ function checkYogas(planets, ascendant, houses) {
     });
   }
 
+  // 10. Budhaditya Yoga
+  const sunH = getHouseOfPlanet('Sun');
+  const merH2 = getHouseOfPlanet('Mercury');
+  if (sunH && merH2 && sunH === merH2) {
+    yogas.push({
+      name: "Budhaditya Yoga",
+      description: `Sun and Mercury are conjoined in House ${sunH}. This grants sharp intellect, sweet speech, wisdom, excellent learning capability, and good reputation.`
+    });
+  }
+
+  // 11. Neechbhanga Rajyoga
+  planets.forEach(p => {
+    const dignity = getDignity(p.planet, p.sign);
+    if (dignity === 'debilitated') {
+      const signLord = SIGN_LORDS[p.sign];
+      const signLordH = getHouseOfPlanet(signLord);
+      const signLordSign = getPlanetInSign(signLord);
+      const signLordDignity = getDignity(signLord, signLordSign);
+      
+      let isCancelled = false;
+      let reason = '';
+      
+      if (signLordH && kendras.includes(signLordH)) {
+        isCancelled = true;
+        reason = `its sign lord (${signLord}) is placed in a Kendra house (${signLordH})`;
+      } else if (signLordDignity === 'exalted') {
+        isCancelled = true;
+        reason = `its sign lord (${signLord}) is exalted`;
+      } else {
+        const housePlanets = planets.filter(pl => pl.house === p.house && pl.planet !== p.planet);
+        const exaltedCompanion = housePlanets.find(pl => getDignity(pl.planet, pl.sign) === 'exalted');
+        if (exaltedCompanion) {
+          isCancelled = true;
+          reason = `it is conjoined with exalted ${exaltedCompanion.planet}`;
+        }
+      }
+      
+      if (isCancelled) {
+        yogas.push({
+          name: `Neechbhanga Rajyoga (${p.planet})`,
+          description: `The debilitation of ${p.planet} in ${p.sign} is cancelled because ${reason}. This transforms weakness into high success, authority, and exceptional achievements.`
+        });
+      }
+    }
+  });
+
+  // 12. Chandradhi Yoga
+  if (moonHouse) {
+    const benefics = ['Jupiter', 'Venus', 'Mercury'];
+    const beneficPositionsFromMoon = benefics.map(b => {
+      const h = getHouseOfPlanet(b);
+      if (!h) return null;
+      return (h - moonHouse + 12) % 12 + 1;
+    }).filter(Boolean);
+    
+    const count678 = beneficPositionsFromMoon.filter(pos => [6, 7, 8].includes(pos)).length;
+    if (count678 >= 2) {
+      yogas.push({
+        name: "Chandradhi Yoga",
+        description: "Benefic planets (Jupiter, Venus, or Mercury) occupy the 6th, 7th, or 8th house from the Moon. This brings leadership, victory over competitors, and a life of comfort, status, and command."
+      });
+    }
+  }
+
+  // 13. Vasumati Yoga
+  const beneficPlanets = ['Jupiter', 'Venus', 'Mercury'];
+  const upachayas = [3, 6, 10, 11];
+  let countUpachayaLagna = 0;
+  let countUpachayaMoon = 0;
+  
+  beneficPlanets.forEach(b => {
+    const h = getHouseOfPlanet(b);
+    if (h) {
+      if (upachayas.includes(h)) {
+        countUpachayaLagna++;
+      }
+      if (moonHouse) {
+        const posFromMoon = (h - moonHouse + 12) % 12 + 1;
+        if (upachayas.includes(posFromMoon)) {
+          countUpachayaMoon++;
+        }
+      }
+    }
+  });
+  
+  if (countUpachayaLagna === 3 || countUpachayaMoon === 3) {
+    yogas.push({
+      name: "Vasumati Yoga",
+      description: "All natural benefic planets (Jupiter, Venus, and Mercury) occupy Upachaya houses (3rd, 6th, 10th, or 11th) from the Lagna or Moon. This guarantees substantial wealth and prosperity built by self-effort."
+    });
+  }
+
+  // 14. Lunar Yogas (Sunapha, Anapha, Durudhura)
+  if (moonHouse) {
+    const planetsIn2ndFromMoon = planets.filter(p => p.planet !== 'Moon' && p.planet !== 'Sun' && p.planet !== 'Rahu' && p.planet !== 'Ketu' && p.house === (moonHouse % 12 + 1));
+    const planetsIn12thFromMoon = planets.filter(p => p.planet !== 'Moon' && p.planet !== 'Sun' && p.planet !== 'Rahu' && p.planet !== 'Ketu' && p.house === ((moonHouse - 2 + 12) % 12 + 1));
+    
+    if (planetsIn2ndFromMoon.length > 0 && planetsIn12thFromMoon.length > 0) {
+      yogas.push({
+        name: "Durudhura Yoga",
+        description: `Planets are present in both the 2nd house (${planetsIn2ndFromMoon.map(p=>p.planet).join(', ')}) and 12th house (${planetsIn12thFromMoon.map(p=>p.planet).join(', ')}) from the Moon. Bestows wealth, comfort, stable finances, and respect.`
+      });
+    } else if (planetsIn2ndFromMoon.length > 0) {
+      yogas.push({
+        name: "Sunapha Yoga",
+        description: `Planets (${planetsIn2ndFromMoon.map(p=>p.planet).join(', ')}) are present in the 2nd house from the Moon. This grants self-earned wealth, fame, content nature, and intelligence.`
+      });
+    } else if (planetsIn12thFromMoon.length > 0) {
+      yogas.push({
+        name: "Anapha Yoga",
+        description: `Planets (${planetsIn12thFromMoon.map(p=>p.planet).join(', ')}) are present in the 12th house from the Moon. This grants good temperament, generosity, healthy habits, and magnetizing personality.`
+      });
+    }
+  }
+
+  // 15. Solar Yogas (Veshi, Vashi, Ubhayachari)
+  const sunHouse_solar = getHouseOfPlanet('Sun');
+  if (sunHouse_solar) {
+    const planetsIn2ndFromSun = planets.filter(p => p.planet !== 'Sun' && p.planet !== 'Moon' && p.planet !== 'Rahu' && p.planet !== 'Ketu' && p.house === (sunHouse_solar % 12 + 1));
+    const planetsIn12thFromSun = planets.filter(p => p.planet !== 'Sun' && p.planet !== 'Moon' && p.planet !== 'Rahu' && p.planet !== 'Ketu' && p.house === ((sunHouse_solar - 2 + 12) % 12 + 1));
+
+    if (planetsIn2ndFromSun.length > 0 && planetsIn12thFromSun.length > 0) {
+      yogas.push({
+        name: "Ubhayachari Yoga",
+        description: `Planets are present in both the 2nd house (${planetsIn2ndFromSun.map(p=>p.planet).join(', ')}) and 12th house (${planetsIn12thFromSun.map(p=>p.planet).join(', ')}) from the Sun. This blesses you with sweet speech, a strong physique, leadership, and generic success.`
+      });
+    } else if (planetsIn2ndFromSun.length > 0) {
+      yogas.push({
+        name: "Veshi Yoga",
+        description: `Planets (${planetsIn2ndFromSun.map(p=>p.planet).join(', ')}) are present in the 2nd house from the Sun. This gives balanced outlook, name, fame, and favor from authorities.`
+      });
+    } else if (planetsIn12thFromSun.length > 0) {
+      yogas.push({
+        name: "Vashi Yoga",
+        description: `Planets (${planetsIn12thFromSun.map(p=>p.planet).join(', ')}) are present in the 12th house from the Sun. This grants strong intellect, learning ability, memory, and success in foreign lands.`
+      });
+    }
+  }
+
   if (yogas.length === 0) {
     yogas.push({
       name: "Nabha Yogas & General Cosmic Harmony",
@@ -1244,6 +1442,15 @@ function transformToKundliData(name, gender, dob, tob, pob, geo, chart, panchang
   const rtp = panchang.request_time_panchang || {};
   const moonSign = rtp.moon_sign?.name || chart.planets.find(p => p.name === 'Moon')?.sign || 'Aries';
 
+  const getVarna = (rashi) => {
+    const r = (rashi || '').toLowerCase().trim();
+    if (['cancer', 'scorpio', 'pisces'].includes(r)) return 'Brahmin (Intellectual & Spiritual)';
+    if (['aries', 'leo', 'sagittarius'].includes(r)) return 'Kshatriya (Warrior & Leader)';
+    if (['taurus', 'virgo', 'capricorn'].includes(r)) return 'Vaishya (Merchant & Business)';
+    if (['gemini', 'libra', 'aquarius'].includes(r)) return 'Shudra (Service & Artisan)';
+    return 'N/A';
+  };
+
   // Chalit chart data payload
   const chalit = {
     ascendant: {
@@ -1274,15 +1481,16 @@ function transformToKundliData(name, gender, dob, tob, pob, geo, chart, panchang
       moon_sign: moonSign,
     },
     panchang: {
-      day: panchang.weekday?.name || 'N/A',
-      tithi: `${rtp.tithi?.paksha || panchang.tithi?.paksha || ''} ${rtp.tithi?.name || panchang.tithi?.name || 'N/A'}`.trim(),
-      nakshatra: `${rtp.nakshatra?.name || panchang.nakshatra?.name || 'N/A'}${rtp.nakshatra?.pada ? ` Pada ${rtp.nakshatra.pada}` : panchang.nakshatra?.pada ? ` Pada ${panchang.nakshatra.pada}` : ''}`,
-      yog: rtp.yoga?.name || panchang.yoga?.name || 'N/A',
-      karan: rtp.karan?.name || panchang.karanas?.[0]?.name || 'N/A',
-      paksha: rtp.tithi?.paksha || panchang.tithi?.paksha || 'N/A',
+      day: panchang.day || panchang.weekday?.name || 'N/A',
+      tithi: panchang.tithi && typeof panchang.tithi === 'string' ? panchang.tithi : `${rtp.tithi?.paksha || panchang.tithi?.paksha || ''} ${rtp.tithi?.name || panchang.tithi?.name || 'N/A'}`.trim(),
+      nakshatra: panchang.nakshatra && typeof panchang.nakshatra === 'string' ? panchang.nakshatra : `${rtp.nakshatra?.name || panchang.nakshatra?.name || 'N/A'}${rtp.nakshatra?.pada ? ` Pada ${rtp.nakshatra.pada}` : panchang.nakshatra?.pada ? ` Pada ${panchang.nakshatra.pada}` : ''}`,
+      yog: panchang.yog || panchang.yoga || rtp.yoga?.name || panchang.yoga?.name || 'N/A',
+      karan: panchang.karan || panchang.karana || rtp.karan?.name || panchang.karanas?.[0]?.name || 'N/A',
+      paksha: panchang.paksha || rtp.tithi?.paksha || panchang.tithi?.paksha || 'N/A',
       sunrise: panchang.sunrise || 'N/A',
       sunset: panchang.sunset || 'N/A',
-      vikram_samvat: panchang.lunar_month?.vikram_samvat || 'N/A',
+      varna: getVarna(moonSign),
+      vikram_samvat: panchang.vikram_samvat || panchang.lunar_month?.vikram_samvat || 'N/A',
     },
     planets,
     chartHouses,
@@ -1540,6 +1748,7 @@ function generateMockKundli(name, gender, dob, tob, pob) {
       paksha: 'Shukla Paksha',
       sunrise: '05:42 AM',
       sunset: '07:05 PM',
+      varna: 'Vaishya (Merchant & Business)',
       vikram_samvat: '2083'
     },
     planets: mockPlanets,
