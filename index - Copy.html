@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>AstroKundli — Vedic Astrology</title>
+<meta name="description" content="Get your detailed Vedic Kundli — Panchang, Planetary Positions, Lagna Chart & AI Predictions — generated instantly by AstroKundli.">
+<link rel="stylesheet" href="style.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Firebase CDN (Compat version v9) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
+</head>
+<body>
+
+<canvas id="starCanvas" class="star-canvas"></canvas>
+
+<div class="app" id="mainApp">
+
+  <!-- ============ HEADER ============ -->
+  <header class="app-header">
+    <div class="brand"><span class="om">🕉</span> Astro<b>Kundli</b></div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button id="langToggleBtn" style="font-size:11.5px; font-weight:700; padding:4px 10px; cursor:pointer; border-radius:14px; background:rgba(212,175,55,0.15); border:1px solid rgba(212,175,55,0.4); color:var(--gold-light); transition:all 0.2s;" title="Switch Language">🌐 EN</button>
+      <button id="themeToggleBtn" style="font-size:18px; padding:6px; cursor:pointer; display:flex; align-items:center; justify-content:center; border-radius:50%; width:32px; height:32px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); transition:all 0.2s;" title="Toggle Theme">🌙</button>
+      <div class="coin-pill" id="coinPill"><span class="coin-icon"></span> <span id="coinCount">0</span></div>
+    </div>
+  </header>
+
+  <!-- ============ HOME SCREEN ============ -->
+  <section class="screen active" id="screen-home">
+    <div class="hero-card">
+      <span class="hero-zodiac" id="heroZodiac">✨</span>
+      <h1>Unlock the Stars'<br>Secrets</h1>
+      <p>Get your detailed Vedic Kundli — Panchang, Planetary Positions, Lagna Chart &amp; Predictions — generated instantly.</p>
+      <button class="btn btn-gold" id="homeGenerateBtn">Generate My Kundli</button>
+    </div>
+
+    <div class="section-title">Quick Tools</div>
+    <div class="quick-grid">
+      <div class="quick-card" data-go="generate">
+        <div class="ic">📜</div>
+        <div class="lbl">Detailed Kundli</div>
+        <div class="sub">Full birth chart report</div>
+      </div>
+      <div class="quick-card" data-go="horoscope">
+        <div class="ic">🔮</div>
+        <div class="lbl">Daily Horoscope</div>
+        <div class="sub">Today's predictions</div>
+      </div>
+      <div class="quick-card" data-go="compat">
+        <div class="ic">💑</div>
+        <div class="lbl">Kundli Match</div>
+        <div class="sub">Compatibility report</div>
+      </div>
+      <div class="quick-card" data-go="reports">
+        <div class="ic">📅</div>
+        <div class="lbl">My Reports</div>
+        <div class="sub">View past kundlis</div>
+      </div>
+    </div>
+
+    <div class="section-title">Today's Cosmic Insight</div>
+    <div class="daily-card" id="dailyInsightCard">
+      <div class="daily-loading">
+        <div class="daily-dots"><span></span><span></span><span></span></div>
+        <span style="font-size:12px; color:var(--text-muted);">Loading today's insight...</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ GENERATE KUNDLI SCREEN ============ -->
+  <section class="screen" id="screen-generate">
+    <div class="section-title">Enter Birth Details</div>
+    <form class="form-card" id="kundliForm" novalidate>
+
+      <div class="field" id="field-name">
+        <label>Full Name</label>
+        <input type="text" name="full_name" placeholder="e.g. Aarav Sharma" autocomplete="name">
+        <div class="field-error">Please enter your full name.</div>
+      </div>
+
+      <div class="field" id="field-gender">
+        <label>Gender</label>
+        <div class="gender-row" id="genderRow">
+          <div class="gender-opt" data-val="Male">♂ Male</div>
+          <div class="gender-opt" data-val="Female">♀ Female</div>
+          <div class="gender-opt" data-val="Other">⚧ Other</div>
+        </div>
+        <input type="hidden" name="gender" id="genderInput">
+        <div class="field-error">Please select your gender.</div>
+      </div>
+
+      <div class="field" id="field-dob">
+        <label>Date of Birth</label>
+        <input type="date" name="dob" id="dobInput">
+        <div class="field-error">Please enter a valid date of birth.</div>
+      </div>
+
+      <div class="field" id="field-tob">
+        <label>Time of Birth</label>
+        <input type="time" name="tob">
+        <div class="field-error">Please enter your time of birth.</div>
+      </div>
+
+      <div class="field" id="field-pob" style="position:relative;">
+        <label>Place of Birth</label>
+        <input type="text" name="pob" id="pobInput" placeholder="e.g. New Delhi, India" autocomplete="off">
+        <div class="autocomplete-dropdown" id="pobDropdown"></div>
+        <div class="field-error">Please enter your place of birth.</div>
+      </div>
+
+
+      <button type="submit" class="btn btn-gold btn-block btn-lg">Generate Detailed Kundli</button>
+    </form>
+  </section>
+
+  <!-- ============ EARN COINS SCREEN ============ -->
+  <section class="screen" id="screen-earn">
+    <div class="coin-hero">
+      <div class="big-coin" id="bigCoinCount">0</div>
+      <h2>Your Coin Balance</h2>
+      <p>Watch short ads to earn coins and chat with AstroGuru AI</p>
+    </div>
+
+    <div class="section-title">Earn More</div>
+    <div class="earn-options">
+      <div class="earn-option">
+        <div class="info">
+          <div class="ic">📺</div>
+          <div>
+            <div class="t">Watch Rewarded Ad</div>
+            <div class="s">30 second video ad</div>
+          </div>
+        </div>
+        <button class="btn btn-gold" id="watchAdBtn" style="padding:9px 16px; font-size:12.5px;">+10 🪙</button>
+      </div>
+
+      <div class="earn-option" id="dailyCheckinRow" style="cursor:pointer;">
+        <div class="info">
+          <div class="ic">🔁</div>
+          <div>
+            <div class="t">Daily Check-in</div>
+            <div class="s" id="checkinSubtext">Open the app every day</div>
+          </div>
+        </div>
+        <span class="reward" id="checkinReward">+5 🪙</span>
+      </div>
+
+      <div class="earn-option" id="referRow" style="cursor:pointer;">
+        <div class="info">
+          <div class="ic">👥</div>
+          <div>
+            <div class="t">Refer a Friend</div>
+            <div class="s">Tap to copy your invite link</div>
+          </div>
+        </div>
+        <span class="reward">+20 🪙</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ AI CHAT SCREEN ============ -->
+  <section class="screen" id="screen-chat">
+    <div class="chat-header-card">
+      <div class="guru-avatar">🔮</div>
+      <div>
+        <h2>AstroGuru</h2>
+        <p>Your AI Astrologer (Powered by Gemini)</p>
+      </div>
+    </div>
+
+    <div class="chat-container">
+      <div class="chat-messages" id="chatMessages"></div>
+
+      <div class="chat-input-wrapper">
+        <input type="text" id="chatInput" placeholder="Ask AstroGuru..." autocomplete="off">
+        <button id="sendChatBtn" class="btn btn-gold">Send</button>
+      </div>
+
+      <div class="chat-notice">
+        <span>Each message costs <b style="color:var(--gold-light)">1 🪙 Coin</b>.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DAILY HOROSCOPE SCREEN ============ -->
+  <section class="screen" id="screen-horoscope">
+    <div class="section-title">Daily Horoscope</div>
+    <div class="zodiac-grid" id="zodiacGrid">
+      <div class="zodiac-chip" data-sign="Aries">♈<span>Aries</span></div>
+      <div class="zodiac-chip" data-sign="Taurus">♉<span>Taurus</span></div>
+      <div class="zodiac-chip" data-sign="Gemini">♊<span>Gemini</span></div>
+      <div class="zodiac-chip" data-sign="Cancer">♋<span>Cancer</span></div>
+      <div class="zodiac-chip" data-sign="Leo">♌<span>Leo</span></div>
+      <div class="zodiac-chip" data-sign="Virgo">♍<span>Virgo</span></div>
+      <div class="zodiac-chip" data-sign="Libra">♎<span>Libra</span></div>
+      <div class="zodiac-chip" data-sign="Scorpio">♏<span>Scorpio</span></div>
+      <div class="zodiac-chip" data-sign="Sagittarius">♐<span>Sagittarius</span></div>
+      <div class="zodiac-chip" data-sign="Capricorn">♑<span>Capricorn</span></div>
+      <div class="zodiac-chip" data-sign="Aquarius">♒<span>Aquarius</span></div>
+      <div class="zodiac-chip" data-sign="Pisces">♓<span>Pisces</span></div>
+    </div>
+    <div class="horoscope-result" id="horoscopeResult">
+      <div class="horoscope-empty">
+        <div style="font-size:48px; margin-bottom:12px;">🌟</div>
+        <p>Select your zodiac sign above<br>to get today's personalized horoscope</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ KUNDLI COMPATIBILITY SCREEN ============ -->
+  <section class="screen" id="screen-compat">
+    <div class="section-title">Kundli Compatibility</div>
+    <div class="compat-intro">
+      <div class="compat-intro-icon">💑</div>
+      <p>Enter birth details of both persons for an AI-powered Vedic compatibility analysis</p>
+    </div>
+    <form class="form-card" id="compatForm" novalidate style="margin-top:14px;">
+      <div class="compat-person-label">👤 Person 1</div>
+      <div class="field" id="compat-field-name1">
+        <label>Full Name</label>
+        <input type="text" name="name1" placeholder="e.g. Aarav Sharma" autocomplete="off">
+        <div class="field-error">Please enter name.</div>
+      </div>
+      <div class="field" id="compat-field-dob1">
+        <label>Date of Birth</label>
+        <input type="date" name="dob1" class="compatDobInput">
+        <div class="field-error">Please enter date of birth.</div>
+      </div>
+      <div class="field" id="compat-field-pob1">
+        <label>Place of Birth</label>
+        <input type="text" name="pob1" placeholder="e.g. Mumbai, India" autocomplete="off">
+        <div class="field-error">Please enter place of birth.</div>
+      </div>
+
+      <div class="compat-divider">💫</div>
+
+      <div class="compat-person-label">👤 Person 2</div>
+      <div class="field" id="compat-field-name2">
+        <label>Full Name</label>
+        <input type="text" name="name2" placeholder="e.g. Priya Patel" autocomplete="off">
+        <div class="field-error">Please enter name.</div>
+      </div>
+      <div class="field" id="compat-field-dob2">
+        <label>Date of Birth</label>
+        <input type="date" name="dob2" class="compatDobInput">
+        <div class="field-error">Please enter date of birth.</div>
+      </div>
+      <div class="field" id="compat-field-pob2">
+        <label>Place of Birth</label>
+        <input type="text" name="pob2" placeholder="e.g. Delhi, India" autocomplete="off">
+        <div class="field-error">Please enter place of birth.</div>
+      </div>
+
+      <button type="submit" class="btn btn-gold btn-block btn-lg" style="margin-top:6px;">Check Compatibility ✨</button>
+    </form>
+    <div id="compatResult" style="display:none; margin-top:16px; padding-bottom:20px;"></div>
+  </section>
+
+  <!-- ============ MY REPORTS SCREEN ============ -->
+  <section class="screen" id="screen-reports">
+    <div class="section-title">My Kundli Reports</div>
+    <div id="reportsList"></div>
+  </section>
+
+  <!-- ============ IN-APP REPORT SCREEN ============ -->
+  <section class="screen" id="screen-report">
+    <div id="reportContent"></div>
+  </section>
+
+  <!-- ============ PROFILE SCREEN ============ -->
+  <section class="screen" id="screen-profile">
+    <div class="profile-card">
+      <div class="avatar" id="avatarInitial">A</div>
+      <div class="profile-name" id="profileName">Guest User</div>
+      <div class="profile-meta">Member since 2026</div>
+      <div class="profile-stats">
+        <div class="stat"><b id="statReports">0</b><span>Kundlis</span></div>
+        <div class="stat"><b id="statCoins">0</b><span>Coins</span></div>
+        <div class="stat"><b id="statAds">0</b><span>Ads Watched</span></div>
+      </div>
+    </div>
+
+    <div class="section-title">Account</div>
+    <div class="list-menu">
+      <a href="#" data-go="reports"><span class="left">📜 My Kundli Reports</span><span>›</span></a>
+      <a href="#" data-go="earn"><span class="left">🪙 Earn More Coins</span><span>›</span></a>
+      <a href="#"><span class="left">🔔 Notifications</span><span>›</span></a>
+      <a href="#"><span class="left">⚙️ Settings</span><span>›</span></a>
+      <a href="#"><span class="left">💬 Help &amp; Support</span><span>›</span></a>
+      <button id="resetWalletBtn" style="color: #ff4d4d;"><span class="left">🚪 Log Out</span><span>›</span></button>
+    </div>
+  </section>
+
+  <!-- ============ BOTTOM NAV ============ -->
+  <nav class="bottom-nav">
+    <a class="nav-item active" data-go="home"><span class="nav-ic">🏠</span>Home</a>
+    <a class="nav-item" data-go="generate"><span class="nav-ic">📜</span>Generate</a>
+    <a class="nav-item" data-go="chat"><span class="nav-ic">💬</span>AI Chat</a>
+    <a class="nav-item" data-go="earn"><span class="nav-ic">🪙</span>Earn Coins</a>
+    <a class="nav-item" data-go="profile"><span class="nav-ic">👤</span>Profile</a>
+  </nav>
+
+  <!-- ============ STICKY BOTTOM AD BANNER ============ -->
+  <div class="ad-banner"><span>Advertisement Space — 320x50</span></div>
+
+  <!-- ============ INSUFFICIENT COINS MODAL ============ -->
+  <div class="modal-overlay" id="insufficientModal">
+    <div class="modal-sheet">
+      <div class="handle"></div>
+      <div class="modal-icon">🪙</div>
+      <h3>Insufficient Coins!</h3>
+      <p>You need more coins to continue. Watch a 30-second ad to earn 10 coins instantly.</p>
+      <div class="modal-actions">
+        <button class="btn btn-gold btn-block" id="modalWatchAdBtn">▶ Watch Ad &amp; Earn 10 Coins</button>
+        <button class="btn btn-outline btn-block" id="modalCloseBtn">Maybe Later</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ONBOARDING MODAL ============ -->
+  <div class="modal-overlay" id="onboardingModal">
+    <div class="modal-sheet onboarding-sheet">
+      <div class="handle"></div>
+      <div class="onboarding-icon">🕉</div>
+      <h3>Welcome to AstroKundli!</h3>
+      <div class="onboarding-steps">
+        <div class="onboarding-step"><span>📜</span><p>Generate your detailed <b>Vedic Kundli</b> with real planetary positions, Panchang &amp; AI predictions</p></div>
+        <div class="onboarding-step"><span>🔮</span><p>Chat with <b>AstroGuru AI</b> for personalized astrological guidance based on your birth chart</p></div>
+        <div class="onboarding-step"><span>🪙</span><p>Earn <b>coins</b> by watching ads &amp; daily check-ins to ask AstroGuru AI questions</p></div>
+      </div>
+      <div class="onboarding-gift">
+        <span>🎁</span>
+        <p>You've received <b style="color:var(--gold-light)">20 free starter coins!</b></p>
+      </div>
+      <button class="btn btn-gold btn-block btn-lg" id="onboardingCloseBtn">Start Exploring ✨</button>
+    </div>
+  </div>
+
+  <!-- ============ LOADER ============ -->
+  <div class="loader-overlay" id="loaderOverlay">
+    <div class="spinner"></div>
+    <span id="loaderText">Loading...</span>
+  </div>
+
+  <!-- ============ TOAST ============ -->
+  <div class="toast" id="toast"></div>
+
+</div> <!-- End mainApp -->
+
+<!-- ============ AUTHENTICATION SCREEN ============ -->
+<div id="screen-auth" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-icon">🕉</div>
+    <h2>Welcome to AstroKundli</h2>
+    <p>Sign in to save your Kundli reports and sync your coin balance across devices.</p>
+    
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabSignIn">Sign In</button>
+      <button class="auth-tab" id="tabSignUp">Create Account</button>
+    </div>
+
+    <form id="authForm">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="authEmail" placeholder="you@example.com" required>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="authPassword" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn btn-gold btn-block" id="authSubmitBtn">Sign In</button>
+    </form>
+
+    <div class="auth-divider"><span>OR</span></div>
+    
+    <button class="btn btn-outline btn-block" id="googleSignInBtn">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="" width="18" height="18" style="vertical-align:middle;margin-right:8px;">
+      Continue with Google
+    </button>
+    
+    <button class="btn btn-text" id="continueGuestBtn" style="margin-top:12px; font-size:12px; color:var(--text-muted); text-decoration:underline;">
+      Continue as Guest (No Cloud Sync)
+    </button>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
